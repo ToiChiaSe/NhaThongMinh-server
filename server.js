@@ -7,7 +7,7 @@ const mqtt = require("mqtt");
 const app = express();
 
 // ========= Config =========
-const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_URI = process.env.MONGODB_URI; // mongodb+srv://user:pass@cluster/NhaThongMinh
 const MQTT_URL = process.env.MQTT_URL || "mqtt://test.mosquitto.org:1883";
 const PORT = process.env.PORT || 3000;
 
@@ -78,6 +78,15 @@ app.get("/api/cambien/latest", async (req, res) => {
   }
 });
 
+app.get("/api/cambien/recent", async (req, res) => {
+  try {
+    const docs = await CamBien.find().sort({ createdAt: -1 }).limit(10);
+    res.json(docs);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/api/trangthai/latest", async (req, res) => {
   try {
     const doc = await TrangThai.findOne();
@@ -87,6 +96,7 @@ app.get("/api/trangthai/latest", async (req, res) => {
   }
 });
 
+// Gửi lệnh điều khiển
 app.post("/api/cmd", (req, res) => {
   const { topic, cmd } = req.body || {};
   if (!topic || typeof cmd !== "string") {
