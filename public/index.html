@@ -4,25 +4,84 @@
   <meta charset="UTF-8">
   <title>Smart Home Dashboard</title>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    h1 { color: #2c3e50; }
-    .sensor, .status, .controls, .report { margin-bottom: 20px; }
-    button { margin: 5px; padding: 10px; }
-    table { border-collapse: collapse; width: 100%; }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f6f9; }
+    h1 { color: #2c3e50; text-align: center; }
+
+    .card {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .card h2 {
+      margin-top: 0;
+      color: #34495e;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 8px;
+    }
+
+    .sensor p, .status p {
+      font-size: 16px;
+      margin: 6px 0;
+    }
+
+    .control-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+
+    /* Toggle switch style */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+    .switch input { display: none; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px; width: 18px;
+      left: 3px; bottom: 3px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #3498db;
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
     th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    th { background: #ecf0f1; }
   </style>
 </head>
 <body>
-  <h1>Smart Home Dashboard</h1>
+  <h1> Smart Home Dashboard</h1>
 
-  <div class="sensor">
+  <div class="card sensor">
     <h2>Thông số cảm biến</h2>
-    <p>Nhiệt độ: <span id="nhietdo">--</span> °C</p>
-    <p>Độ ẩm: <span id="doam">--</span> %</p>
-    <p>Ánh sáng: <span id="anhSang">--</span> lux</p>
+    <p> Nhiệt độ: <span id="nhietdo">--</span> °C</p>
+    <p> Độ ẩm: <span id="doam">--</span> %</p>
+    <p> Ánh sáng: <span id="anhSang">--</span> lux</p>
   </div>
 
-  <div class="status">
+  <div class="card status">
     <h2>Trạng thái thiết bị</h2>
     <p>LED1: <span id="led1">--</span></p>
     <p>LED2: <span id="led2">--</span></p>
@@ -32,23 +91,53 @@
     <p>Rèm: <span id="curtainMode">--</span></p>
   </div>
 
-  <div class="controls">
-    <h2>Điều khiển</h2>
-    <button onclick="sendCmd('truong/home/cmd/led1','ON')">Bật LED1</button>
-    <button onclick="sendCmd('truong/home/cmd/led1','OFF')">Tắt LED1</button>
-    <button onclick="sendCmd('truong/home/cmd/led2','ON')">Bật LED2</button>
-    <button onclick="sendCmd('truong/home/cmd/led2','OFF')">Tắt LED2</button>
-    <button onclick="sendCmd('truong/home/cmd/led3','ON')">Bật LED3</button>
-    <button onclick="sendCmd('truong/home/cmd/led3','OFF')">Tắt LED3</button>
-    <button onclick="sendCmd('truong/home/cmd/led4','ON')">Bật LED4</button>
-    <button onclick="sendCmd('truong/home/cmd/led4','OFF')">Tắt LED4</button>
-    <button onclick="sendCmd('truong/home/cmd/fan','ON')">Bật Quạt</button>
-    <button onclick="sendCmd('truong/home/cmd/fan','OFF')">Tắt Quạt</button>
-    <button onclick="sendCmd('truong/home/cmd/curtain','OPEN')">Mở Rèm</button>
-    <button onclick="sendCmd('truong/home/cmd/curtain','CLOSE')">Đóng Rèm</button>
+  <div class="card controls">
+    <h2>Điều khiển thiết bị</h2>
+    <div class="control-item">
+      <span>LED1</span>
+      <label class="switch">
+        <input type="checkbox" onchange="toggleDevice(this,'truong/home/cmd/led1')">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="control-item">
+      <span>LED2</span>
+      <label class="switch">
+        <input type="checkbox" onchange="toggleDevice(this,'truong/home/cmd/led2')">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="control-item">
+      <span>LED3</span>
+      <label class="switch">
+        <input type="checkbox" onchange="toggleDevice(this,'truong/home/cmd/led3')">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="control-item">
+      <span>LED4</span>
+      <label class="switch">
+        <input type="checkbox" onchange="toggleDevice(this,'truong/home/cmd/led4')">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="control-item">
+      <span>Quạt</span>
+      <label class="switch">
+        <input type="checkbox" onchange="toggleDevice(this,'truong/home/cmd/fan')">
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div class="control-item">
+      <span>Rèm</span>
+      <label class="switch">
+        <input type="checkbox" onchange="toggleCurtain(this)">
+        <span class="slider"></span>
+      </label>
+    </div>
   </div>
 
-  <div class="report">
+  <div class="card report">
     <h2>Báo cáo thống kê (10 bản ghi gần nhất)</h2>
     <table id="reportTable">
       <thead>
@@ -80,6 +169,16 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ topic, cmd })
       });
+    }
+
+    function toggleDevice(el, topic) {
+      const cmd = el.checked ? "ON" : "OFF";
+      sendCmd(topic, cmd);
+    }
+
+    function toggleCurtain(el) {
+      const cmd = el.checked ? "OPEN" : "CLOSE";
+      sendCmd("truong/home/cmd/curtain", cmd);
     }
 
     async function fetchReport() {
