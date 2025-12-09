@@ -43,37 +43,35 @@ mqttClient.on("message", async (topic, payload) => {
   try {
     const data = JSON.parse(msg);
 
-    // Bỏ qua nếu không phải object
     if (typeof data !== "object" || data === null || Array.isArray(data)) {
-      console.warn("Bỏ qua payload không hợp lệ:", msg);
+      console.warn(" Bỏ qua payload không hợp lệ:", msg);
       return;
     }
 
-    // Lọc deviceId
     if (data.deviceId !== "esp32-001") {
-      console.warn("Bỏ qua payload từ thiết bị khác:", data.deviceId);
+      console.warn(" Bỏ qua payload từ thiết bị khác:", data.deviceId);
       return;
     }
     delete data.deviceId;
 
     if (topic === "truong/home/cambien") {
       await CamBien.create(data);
-      console.log("Lưu CamBien:", data);
+      console.log(" Lưu CamBien:", data);
     }
 
     if (topic === "truong/home/status") {
       await TrangThai.findOneAndUpdate({}, { $set: data }, { upsert: true, new: true });
-      console.log("Cập nhật TrangThai:", data);
+      console.log(" Cập nhật TrangThai:", data);
     }
   } catch (err) {
-    console.error("Lỗi xử lý MQTT:", err.message, "Payload:", msg);
+    console.error(" Lỗi xử lý MQTT:", err.message, "Payload:", msg);
   }
 });
 
 // ========= Express =========
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(path.join(__dirname, "public"))); // phục vụ dashboard
 
 // ========= REST APIs =========
 app.get("/api/cambien/latest", async (req, res) => {
@@ -91,7 +89,7 @@ app.get("/api/trangthai/latest", async (req, res) => {
   res.json(doc || {});
 });
 
-// Gửi lệnh điều khiển
+// ========= API điều khiển =========
 app.post("/api/cmd", (req, res) => {
   const { topic, cmd } = req.body || {};
   if (!topic || typeof cmd !== "string") {
@@ -99,12 +97,12 @@ app.post("/api/cmd", (req, res) => {
   }
   mqttClient.publish(topic, cmd, { qos: 0 }, (err) => {
     if (err) return res.status(500).json({ error: err.message });
-    console.log(`Publish CMD: ${topic} -> ${cmd}`);
+    console.log(` Publish CMD: ${topic} -> ${cmd}`);
     res.json({ success: true });
   });
 });
 
 // ========= Start server =========
 app.listen(PORT, () => {
-  console.log(`WebServer chạy tại http://localhost:${PORT}`);
+  console.log(`🌐 WebServer chạy tại http://localhost:${PORT}`);
 });
