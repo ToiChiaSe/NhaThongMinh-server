@@ -26,20 +26,26 @@
     <h2>Trạng thái thiết bị</h2>
     <p>LED1: <span id="led1">--</span></p>
     <p>LED2: <span id="led2">--</span></p>
+    <p>LED3: <span id="led3">--</span></p>
+    <p>LED4: <span id="led4">--</span></p>
     <p>Quạt: <span id="fan">--</span></p>
     <p>Rèm: <span id="curtainMode">--</span></p>
   </div>
 
   <div class="controls">
     <h2>Điều khiển</h2>
-    <button onclick="sendCmd('home/cmd/led1','ON')">Bật LED1</button>
-    <button onclick="sendCmd('home/cmd/led1','OFF')">Tắt LED1</button>
-    <button onclick="sendCmd('home/cmd/led2','ON')">Bật LED2</button>
-    <button onclick="sendCmd('home/cmd/led2','OFF')">Tắt LED2</button>
-    <button onclick="sendCmd('home/cmd/fan','ON')">Bật Quạt</button>
-    <button onclick="sendCmd('home/cmd/fan','OFF')">Tắt Quạt</button>
-    <button onclick="sendCmd('home/cmd/curtain','OPEN')">Mở Rèm</button>
-    <button onclick="sendCmd('home/cmd/curtain','CLOSE')">Đóng Rèm</button>
+    <button onclick="sendCmd('truong/home/cmd/led1','ON')">Bật LED1</button>
+    <button onclick="sendCmd('truong/home/cmd/led1','OFF')">Tắt LED1</button>
+    <button onclick="sendCmd('truong/home/cmd/led2','ON')">Bật LED2</button>
+    <button onclick="sendCmd('truong/home/cmd/led2','OFF')">Tắt LED2</button>
+    <button onclick="sendCmd('truong/home/cmd/led3','ON')">Bật LED3</button>
+    <button onclick="sendCmd('truong/home/cmd/led3','OFF')">Tắt LED3</button>
+    <button onclick="sendCmd('truong/home/cmd/led4','ON')">Bật LED4</button>
+    <button onclick="sendCmd('truong/home/cmd/led4','OFF')">Tắt LED4</button>
+    <button onclick="sendCmd('truong/home/cmd/fan','ON')">Bật Quạt</button>
+    <button onclick="sendCmd('truong/home/cmd/fan','OFF')">Tắt Quạt</button>
+    <button onclick="sendCmd('truong/home/cmd/curtain','OPEN')">Mở Rèm</button>
+    <button onclick="sendCmd('truong/home/cmd/curtain','CLOSE')">Đóng Rèm</button>
   </div>
 
   <div class="report">
@@ -62,6 +68,8 @@
       const t = await (await fetch('/api/trangthai/latest')).json();
       document.getElementById('led1').textContent = t?.led1 ? 'ON' : 'OFF';
       document.getElementById('led2').textContent = t?.led2 ? 'ON' : 'OFF';
+      document.getElementById('led3').textContent = t?.led3 ? 'ON' : 'OFF';
+      document.getElementById('led4').textContent = t?.led4 ? 'ON' : 'OFF';
       document.getElementById('fan').textContent = t?.fan ? 'ON' : 'OFF';
       document.getElementById('curtainMode').textContent = t?.curtainMode ?? '--';
     }
@@ -74,11 +82,9 @@
       });
     }
 
-    // Báo cáo thống kê: hiển thị 10 bản ghi gần nhất
     async function fetchReport() {
       const res = await fetch('/api/cambien/recent');
       const docs = await res.json();
-
       const tbody = document.querySelector('#reportTable tbody');
       tbody.innerHTML = "";
       docs.forEach(d => {
@@ -94,13 +100,11 @@
       });
     }
 
-    // Refresh dữ liệu mỗi 2 giây
     setInterval(() => {
       fetchData();
       fetchReport();
     }, 2000);
 
-    // Lần đầu load
     fetchData();
     fetchReport();
   </script>
