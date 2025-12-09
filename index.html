@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard ESP32</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/mqttws31.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>📡 Dashboard ESP32</h2>
+  <div id="status">MQTT: Ngắt kết nối</div>
+
+  <p>Nhiệt độ: <span id="temp">--</span> °C</p>
+  <p>Độ ẩm: <span id="hum">--</span> %</p>
+  <p>Ánh sáng: <span id="light">--</span> lx</p>
+
+  <canvas id="tempChart" height="120"></canvas>
+  <canvas id="humChart" height="120"></canvas>
+  <canvas id="lightChart" height="120"></canvas>
+
+  <script>
+    const MQTT_HOST = "test.mosquitto.org";
+    const MQTT_PORT = 8080;
+    const CLIENT_ID = "webClient_" + Math.random().toString(16).slice(2);
+
+    const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
+
+    client.onConnectionLost = () => {
+      document.getElementById("status").textContent = "MQTT: Ngắt kết nối";
+      setTimeout(connectMQTT, 2000);
+    };
+
+    client.onMessageArrived = (message) => {
+      const t = new Date().toLocaleTimeString();
+      if (message.destinationName === "home/sensors/temp") {
+        const v = parseFloat(message.payloadString);
+        document.getElementById("temp").textContent = v.toFixed(1);
+        tempChart.data.labels.push(t);
+        tempChart.data.datasets[0].data.push(v);
+        tempChart.update();
+      }
+      if (message.destinationName === "home/sensors/hum") {
+        const v = parseFloat(message.payloadString);
+        document.getElementById("hum").textContent = v.toFixed(1);
+        humChart.data.labels.push(t);
+        humChart.data.datasets[0].data.push(v);
+        humChart.update();
+      }
+      if (message.destinationName === "home/sensors/light") {
+        const v = parseFloat(message.payloadString);
+        document.getElementById("light").textContent = v.toFixed(0);
+        lightChart.data.labels.push(t);
+        lightChart.data.datasets[0].data.push(v);
+        lightChart.update();
+      }
+    };
+
+    function connectMQTT() {
+      client.connect({
+        useSSL: false,
+        timeout: 5,
+        onSuccess: () => {
+          document.getElementById("status").textContent = "MQTT: Đã kết nối";
+          client.subscribe("home/sensors/temp");
+          client.subscribe("home/sensors/hum");
+          client.subscribe("home/sensors/light");
+        }
+      });
+    }
+
+    function createChart(id, label, color) {
+      return new Chart(document.getElementById(id), {
+        type: 'line',
+        data: { labels: [], datasets: [{ label, data: [], borderColor: color, fill: false }] },
+        options: { animation: false }
+      });
+    }
+
+    const tempChart = createChart("tempChart", "Nhiệt độ (°C)", "red");
+    const humChart  = createChart("humChart", "Độ ẩm (%)", "blue");
+    const lightChart= createChart("lightChart", "Ánh sáng (lx)", "green");
+
+    connectMQTT();
+  </script>
+</body>
+</html>
