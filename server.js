@@ -7,15 +7,14 @@ const mqtt = require("mqtt");
 const app = express();
 
 // ========= Config =========
-const MONGODB_URI = process.env.MONGODB_URI; // mongodb+srv://user:pass@cluster/NhaThongMinh
+const MONGODB_URI = process.env.MONGODB_URI;
 const MQTT_URL = process.env.MQTT_URL || "mqtt://test.mosquitto.org:1883";
 const PORT = process.env.PORT || 3000;
 
 // ========= MongoDB =========
-mongoose
-  .connect(MONGODB_URI, { serverSelectionTimeoutMS: 30000 })
+mongoose.connect(MONGODB_URI, { serverSelectionTimeoutMS: 30000 })
   .then(() => console.log("Đã kết nối MongoDB Atlas"))
-  .catch((err) => console.error("Lỗi MongoDB:", err.message));
+  .catch(err => console.error("Lỗi MongoDB:", err.message));
 
 const cambienSchema = new mongoose.Schema(
   { nhietdo: Number, doam: Number, anhSang: Number },
@@ -23,7 +22,7 @@ const cambienSchema = new mongoose.Schema(
 );
 
 const trangThaiSchema = new mongoose.Schema(
-  { led1: Boolean, led2: Boolean, fan: Boolean, curtainMode: Number },
+  { led1: Boolean, led2: Boolean, led3: Boolean, led4: Boolean, fan: Boolean, curtainMode: Number, encRem: Number, encQuat: Number },
   { timestamps: true }
 );
 
@@ -35,31 +34,39 @@ const mqttClient = mqtt.connect(MQTT_URL, { keepalive: 30, reconnectPeriod: 2000
 
 mqttClient.on("connect", () => {
   console.log("MQTT đã kết nối:", MQTT_URL);
-  mqttClient.subscribe("smarthome/cambien");
-  mqttClient.subscribe("home/status");
+  mqttClient.subscribe("truong/home/cambien");
+  mqttClient.subscribe("truong/home/status");
 });
 
 mqttClient.on("message", async (topic, payload) => {
+  const msg = payload.toString();
   try {
-    const msg = payload.toString();
+    const data = JSON.parse(msg);
 
-    if (topic === "smarthome/cambien") {
-      const data = JSON.parse(msg);
-      if (typeof data?.nhietdo === "number") {
-        await CamBien.create(data);
-        console.log("Lưu CamBien:", data);
-      }
+    // Bỏ qua nếu không phải object
+    if (typeof data !== "object" || data === null || Array.isArray(data)) {
+      console.warn("Bỏ qua payload không hợp lệ:", msg);
       return;
     }
 
-    if (topic === "home/status") {
-      const status = JSON.parse(msg);
-      await TrangThai.findOneAndUpdate({}, { $set: status }, { upsert: true, new: true });
-      console.log("Cập nhật TrangThai:", status);
+    // Lọc deviceId
+    if (data.deviceId !== "esp32-001") {
+      console.warn("Bỏ qua payload từ thiết bị khác:", data.deviceId);
       return;
+    }
+    delete data.deviceId;
+
+    if (topic === "truong/home/cambien") {
+      await CamBien.create(data);
+      console.log("Lưu CamBien:", data);
+    }
+
+    if (topic === "truong/home/status") {
+      await TrangThai.findOneAndUpdate({}, { $set: data }, { upsert: true, new: true });
+      console.log("Cập nhật TrangThai:", data);
     }
   } catch (err) {
-    console.error("Lỗi xử lý MQTT:", err.message);
+    console.error("Lỗi xử lý MQTT:", err.message, "Payload:", msg);
   }
 });
 
@@ -70,30 +77,18 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ========= REST APIs =========
 app.get("/api/cambien/latest", async (req, res) => {
-  try {
-    const doc = await CamBien.findOne().sort({ createdAt: -1 });
-    res.json(doc || {});
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const doc = await CamBien.findOne().sort({ createdAt: -1 });
+  res.json(doc || {});
 });
 
 app.get("/api/cambien/recent", async (req, res) => {
-  try {
-    const docs = await CamBien.find().sort({ createdAt: -1 }).limit(10);
-    res.json(docs);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const docs = await CamBien.find().sort({ createdAt: -1 }).limit(10);
+  res.json(docs);
 });
 
 app.get("/api/trangthai/latest", async (req, res) => {
-  try {
-    const doc = await TrangThai.findOne();
-    res.json(doc || {});
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  const doc = await TrangThai.findOne();
+  res.json(doc || {});
 });
 
 // Gửi lệnh điều khiển
