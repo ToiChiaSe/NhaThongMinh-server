@@ -1,117 +1,108 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard ESP32</title>
+  <meta charset="UTF-8">
+  <title>Smart Home Dashboard</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 800px; margin: 24px auto; padding: 0 12px; }
-    h1 { margin-bottom: 8px; }
-    .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin: 12px 0; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-    .val { font-size: 22px; font-weight: 600; }
-    button { padding: 8px 12px; margin: 4px; }
-    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    code { background: #f6f8fa; padding: 2px 6px; border-radius: 6px; }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #2c3e50; }
+    .sensor, .status, .controls, .report { margin-bottom: 20px; }
+    button { margin: 5px; padding: 10px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
   </style>
 </head>
 <body>
-  <h1>📡 Dashboard ESP32</h1>
+  <h1>Smart Home Dashboard</h1>
 
-  <div class="card">
-    <h2>Dữ liệu cảm biến</h2>
-    <div class="grid">
-      <div> Nhiệt độ: <span id="nhietdo" class="val">--</span> °C</div>
-      <div> Độ ẩm: <span id="doam" class="val">--</span> %</div>
-      <div> Ánh sáng: <span id="anhSang" class="val">--</span> lx</div>
-    </div>
+  <div class="sensor">
+    <h2>Thông số cảm biến</h2>
+    <p>Nhiệt độ: <span id="nhietdo">--</span> °C</p>
+    <p>Độ ẩm: <span id="doam">--</span> %</p>
+    <p>Ánh sáng: <span id="anhSang">--</span> lux</p>
   </div>
 
-  <div class="card">
+  <div class="status">
     <h2>Trạng thái thiết bị</h2>
-    <div class="grid">
-      <div> Đèn 1: <span id="led1" class="val">--</span></div>
-      <div> Đèn 2: <span id="led2" class="val">--</span></div>
-      <div> Quạt: <span id="fan" class="val">--</span></div>
-      <div> Rèm (mode): <span id="curtain" class="val">--</span></div>
-    </div>
+    <p>LED1: <span id="led1">--</span></p>
+    <p>LED2: <span id="led2">--</span></p>
+    <p>Quạt: <span id="fan">--</span></p>
+    <p>Rèm: <span id="curtainMode">--</span></p>
   </div>
 
-  <div class="card">
+  <div class="controls">
     <h2>Điều khiển</h2>
-    <div class="row">
-      <div>
-        <div>Đèn 1</div>
-        <button onclick="sendCmd('home/cmd/led1','ON')">Bật</button>
-        <button onclick="sendCmd('home/cmd/led1','OFF')">Tắt</button>
-      </div>
-      <div>
-        <div>Đèn 2</div>
-        <button onclick="sendCmd('home/cmd/led2','ON')">Bật</button>
-        <button onclick="sendCmd('home/cmd/led2','OFF')">Tắt</button>
-      </div>
-      <div>
-        <div>Quạt</div>
-        <button onclick="sendCmd('home/cmd/fan','ON')">Bật</button>
-        <button onclick="sendCmd('home/cmd/fan','OFF')">Tắt</button>
-      </div>
-      <div>
-        <div>Rèm</div>
-        <button onclick="sendCmd('home/cmd/curtain','OPEN')">Mở</button>
-        <button onclick="sendCmd('home/cmd/curtain','CLOSE')">Đóng</button>
-        <button onclick="sendCmd('home/cmd/curtain','STOP')">Dừng</button>
-      </div>
-    </div>
-    <p><small>MQTT topics ví dụ: <code>home/cmd/led1</code>, <code>home/cmd/fan</code>, <code>home/cmd/curtain</code></small></p>
+    <button onclick="sendCmd('home/cmd/led1','ON')">Bật LED1</button>
+    <button onclick="sendCmd('home/cmd/led1','OFF')">Tắt LED1</button>
+    <button onclick="sendCmd('home/cmd/led2','ON')">Bật LED2</button>
+    <button onclick="sendCmd('home/cmd/led2','OFF')">Tắt LED2</button>
+    <button onclick="sendCmd('home/cmd/fan','ON')">Bật Quạt</button>
+    <button onclick="sendCmd('home/cmd/fan','OFF')">Tắt Quạt</button>
+    <button onclick="sendCmd('home/cmd/curtain','OPEN')">Mở Rèm</button>
+    <button onclick="sendCmd('home/cmd/curtain','CLOSE')">Đóng Rèm</button>
+  </div>
+
+  <div class="report">
+    <h2>Báo cáo thống kê (10 bản ghi gần nhất)</h2>
+    <table id="reportTable">
+      <thead>
+        <tr><th>Thời gian</th><th>Nhiệt độ</th><th>Độ ẩm</th><th>Ánh sáng</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
   </div>
 
   <script>
-    async function fetchJSON(url) {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return res.json();
-    }
+    async function fetchData() {
+      const s = await (await fetch('/api/cambien/latest')).json();
+      document.getElementById('nhietdo').textContent = s?.nhietdo ?? '--';
+      document.getElementById('doam').textContent = s?.doam ?? '--';
+      document.getElementById('anhSang').textContent = s?.anhSang ?? '--';
 
-    async function loadSensors() {
-      try {
-        const d = await fetchJSON('/api/cambien/latest');
-        document.getElementById('nhietdo').textContent = d?.nhietdo ?? '--';
-        document.getElementById('doam').textContent = d?.doam ?? '--';
-        document.getElementById('anhSang').textContent = d?.anhSang ?? '--';
-      } catch (e) {
-        console.warn('Sensors error:', e.message);
-      }
-    }
-
-    async function loadStatus() {
-      try {
-        const s = await fetchJSON('/api/trangthai/latest');
-        document.getElementById('led1').textContent = s?.led1 ? 'ON' : 'OFF';
-        document.getElementById('led2').textContent = s?.led2 ? 'ON' : 'OFF';
-        document.getElementById('fan').textContent = s?.fan ? 'ON' : 'OFF';
-        document.getElementById('curtain').textContent =
-          Number.isInteger(s?.curtainMode) ? s.curtainMode : '--';
-      } catch (e) {
-        console.warn('Status error:', e.message);
-      }
+      const t = await (await fetch('/api/trangthai/latest')).json();
+      document.getElementById('led1').textContent = t?.led1 ? 'ON' : 'OFF';
+      document.getElementById('led2').textContent = t?.led2 ? 'ON' : 'OFF';
+      document.getElementById('fan').textContent = t?.fan ? 'ON' : 'OFF';
+      document.getElementById('curtainMode').textContent = t?.curtainMode ?? '--';
     }
 
     async function sendCmd(topic, cmd) {
-      try {
-        await fetch('/api/cmd', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ topic, cmd })
-        });
-      } catch (e) {
-        alert('Lỗi gửi lệnh: ' + e.message);
-      }
+      await fetch('/api/cmd', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic, cmd })
+      });
     }
 
-    loadSensors();
-    loadStatus();
-    setInterval(loadSensors, 2000);
-    setInterval(loadStatus, 2000);
+    // Báo cáo thống kê: hiển thị 10 bản ghi gần nhất
+    async function fetchReport() {
+      const res = await fetch('/api/cambien/recent');
+      const docs = await res.json();
+
+      const tbody = document.querySelector('#reportTable tbody');
+      tbody.innerHTML = "";
+      docs.forEach(d => {
+        const row = `
+          <tr>
+            <td>${new Date(d.createdAt).toLocaleString()}</td>
+            <td>${d.nhietdo ?? '--'}</td>
+            <td>${d.doam ?? '--'}</td>
+            <td>${d.anhSang ?? '--'}</td>
+          </tr>
+        `;
+        tbody.innerHTML += row;
+      });
+    }
+
+    // Refresh dữ liệu mỗi 2 giây
+    setInterval(() => {
+      fetchData();
+      fetchReport();
+    }, 2000);
+
+    // Lần đầu load
+    fetchData();
+    fetchReport();
   </script>
 </body>
 </html>
