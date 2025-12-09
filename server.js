@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
-const MONGO_URL = 'mongodb://localhost:27017/NhaThongMinh';
+const MONGO_URL = "mongodb+srv://h13q03t03_db_user:ToiLaAi123@truong.dqw3eoo.mongodb.net/NhaThongMinh?retryWrites=true&w=majority";
 const MQTT_URL = 'mqtt://test.mosquitto.org:1883';
 
 const app = express();
